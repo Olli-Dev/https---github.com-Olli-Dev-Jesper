@@ -1,0 +1,75 @@
+@page "/products"
+@inject ProductService ProductService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<MudText Typo="Typo.h4" Class="mb-4">Produkter</MudText>
+
+<MudDataGrid Items="@_products" T="Product" Filterable="true" SortMode="SortMode.Multiple" QuickFilter="@_quickFilter"
+             Hideable="true" RowClick="@OnRowClick">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Produktliste</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="_searchString" Placeholder="Søg" Adornment="Adornment.Start" Immediate="true"
+                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="AddProduct" Class="ml-4">
+            Nyt Produkt
+        </MudButton>
+    </ToolBarContent>
+    <Columns>
+        <PropertyColumn Property="x => x.LDB_ID" Title="LDB ID" />
+        <PropertyColumn Property="x => x.PRODUCT_ID" Title="Produkt ID" />
+        <PropertyColumn Property="x => x.INTERNAL_NAME" Title="Internt Navn" />
+        <PropertyColumn Property="x => x.EXTERNAL_NAME" Title="Eksternt Navn" />
+        <PropertyColumn Property="x => x.PROCESS_TYPE" Title="Procestype" />
+        <PropertyColumn Property="x => x.STATE" Title="Status" />
+        <TemplateColumn CellClass="d-flex justify-end">
+            <CellTemplate>
+                <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="@(() => EditProduct(context.Item))" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="Product" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    private List<Product> _products = new();
+    private string _searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _products = await ProductService.GetProductsAsync();
+    }
+
+    private Func<Product, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        if (x.INTERNAL_NAME.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (x.EXTERNAL_NAME?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false)
+            return true;
+
+        return false;
+    };
+
+    private void AddProduct()
+    {
+        NavigationManager.NavigateTo("/products/new");
+    }
+
+    private void EditProduct(Product product)
+    {
+        NavigationManager.NavigateTo($"/products/{product.LDB_ID}/{product.PRODUCT_ID}");
+    }
+
+    private void OnRowClick(DataGridRowClickEventArgs<Product> args)
+    {
+        EditProduct(args.Item);
+    }
+}
+

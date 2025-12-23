@@ -1,0 +1,206 @@
+@page "/products/{LdbId:int}/{ProductId:int}"
+@page "/products/new"
+@inject ProductService ProductService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@rendermode InteractiveServer
+
+<MudText Typo="Typo.h4" Class="mb-4">@(IsNew ? "Nyt Produkt" : $"Rediger Produkt: {Product?.INTERNAL_NAME}")</MudText>
+
+@if (Product == null && !IsNew)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+<MudPaper Class="pa-4">
+        <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6" Color="Color.Primary">
+            <MudTabPanel Text="Basis Info" Icon="@Icons.Material.Filled.Info">
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField @bind-Value="Product.LDB_ID" Label="LDB ID" Required="true" ReadOnly="!IsNew" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField @bind-Value="Product.PRODUCT_ID" Label="Produkt ID" Required="true" ReadOnly="!IsNew" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField @bind-Value="Product.INTERNAL_NAME" Label="Internt Navn" Required="true" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField @bind-Value="Product.EXTERNAL_NAME" Label="Eksternt Navn" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudTextField @bind-Value="Product.ENDPOINT_PATH" Label="Endpoint Sti" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudTextField @bind-Value="Product.PROCESS_TYPE" Label="Procestype" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudTextField @bind-Value="Product.STATE" Label="Status" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="Product.ORDER_FORM_SCHEMA" Label="Order Form Schema" Lines="5" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="Product.AUTO_PROD_MAPPING_SCHEMA" Label="Auto Prod Mapping Schema" Lines="5" Variant="Variant.Outlined" />
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+            
+            <MudTabPanel Text="Konfiguration" Icon="@Icons.Material.Filled.Settings">
+                <MudTable Items="@Product.Configs" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Nøgle Type</MudTh>
+                        <MudTh>Nøgle</MudTh>
+                        <MudTh>Værdi</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Nøgle Type">@context.KEY_TYPE</MudTd>
+                        <MudTd DataLabel="Nøgle">@context.KEY</MudTd>
+                        <MudTd DataLabel="Værdi">@context.VALUE</MudTd>
+                        <MudTd Class="text-right">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => RemoveConfig(context))" />
+                        </MudTd>
+                    </RowTemplate>
+                    <FooterContent>
+                        <MudButton StartIcon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="AddConfig" Class="mt-4">Tilføj Konfiguration</MudButton>
+                    </FooterContent>
+                </MudTable>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Metadata" Icon="@Icons.Material.Filled.Translate">
+                <MudTable Items="@Product.Metadata" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Sprog</MudTh>
+                        <MudTh>Marketing Navn</MudTh>
+                        <MudTh>URL</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Sprog">@context.LANGUAGE_CODE</MudTd>
+                        <MudTd DataLabel="Marketing Navn">@context.MARKETING_NAME</MudTd>
+                        <MudTd DataLabel="URL">@context.PRODUCT_URL</MudTd>
+                        <MudTd Class="text-right">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Info" Size="Size.Small" OnClick="@(() => EditMetadata(context))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => RemoveMetadata(context))" />
+                        </MudTd>
+                    </RowTemplate>
+                    <FooterContent>
+                        <MudButton StartIcon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="AddMetadata" Class="mt-4">Tilføj Metadata</MudButton>
+                    </FooterContent>
+                </MudTable>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Rente Tiers" Icon="@Icons.Material.Filled.ShowChart">
+                <MudTable Items="@Product.InterestTiers" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Rente Type</MudTh>
+                        <MudTh>Grænse</MudTh>
+                        <MudTh>Rentesats</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Rente Type">@context.INTEREST_TYPE</MudTd>
+                        <MudTd DataLabel="Grænse">@context.LIMIT</MudTd>
+                        <MudTd DataLabel="Rentesats">@context.INTEREST_RATE</MudTd>
+                        <MudTd Class="text-right">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => RemoveInterestTier(context))" />
+                        </MudTd>
+                    </RowTemplate>
+                    <FooterContent>
+                        <MudButton StartIcon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="AddInterestTier" Class="mt-4">Tilføj Rente Tier</MudButton>
+                    </FooterContent>
+                </MudTable>
+            </MudTabPanel>
+        </MudTabs>
+
+        <MudDivider Class="my-6" />
+
+        <div class="d-flex justify-end gap-4">
+            <MudButton Variant="Variant.Outlined" OnClick="Cancel">Annuller</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save">Gem Produkt</MudButton>
+        </div>
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public int LdbId { get; set; }
+    [Parameter] public int ProductId { get; set; }
+
+    private Product Product { get; set; } = new()
+    {
+        Configs = new List<ProductConfig>(),
+        Metadata = new List<ProductMetadata>(),
+        InterestTiers = new List<ProductInterestTier>()
+    };
+
+    private bool IsNew => LdbId == 0 && ProductId == 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!IsNew)
+        {
+            var p = await ProductService.GetProductByIdAsync(LdbId, ProductId);
+            if (p != null)
+            {
+                Product = p;
+            }
+        }
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            await ProductService.SaveProductAsync(Product);
+            Snackbar.Add("Produktet blev gemt", Severity.Success);
+            NavigationManager.NavigateTo("/products");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fejl ved gem: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/products");
+    }
+
+    private void AddConfig()
+    {
+        Product.Configs.Add(new ProductConfig { LDB_ID = Product.LDB_ID, PRODUCT_ID = Product.PRODUCT_ID });
+    }
+
+    private void RemoveConfig(ProductConfig config)
+    {
+        Product.Configs.Remove(config);
+    }
+
+    private void AddMetadata()
+    {
+        Product.Metadata.Add(new ProductMetadata { LDB_ID = Product.LDB_ID, PRODUCT_ID = Product.PRODUCT_ID, LANGUAGE_CODE = "da-DK" });
+    }
+
+    private void RemoveMetadata(ProductMetadata metadata)
+    {
+        Product.Metadata.Remove(metadata);
+    }
+
+    private void EditMetadata(ProductMetadata metadata)
+    {
+        // For simplicity, we could open a dialog here, but for now just inline editing would be better
+    }
+
+    private void AddInterestTier()
+    {
+        Product.InterestTiers.Add(new ProductInterestTier { LDB_ID = Product.LDB_ID, PRODUCT_ID = Product.PRODUCT_ID });
+    }
+
+    private void RemoveInterestTier(ProductInterestTier tier)
+    {
+        Product.InterestTiers.Remove(tier);
+    }
+}
+
